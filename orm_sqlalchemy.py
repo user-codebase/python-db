@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, MetaData, Table, Column, String, Float, Integer, Date, inspect, text
+from sqlalchemy import create_engine, MetaData, Table, Column, String, Float, Integer, Date, inspect, text, select, update, delete
 import csv
 from datetime import datetime
 
@@ -51,6 +51,30 @@ def extract_measurements():
 def execute_sql(conn, sql):
     return conn.execute(text(sql)).fetchall()
 
+def print_two_columns_from_stations(conn):
+    print("Selected columns from stations:")
+    sql = select(stations.c.station, stations.c.name)
+    result = conn.execute(sql)
+    for row in result:
+        print(row.station, row.name)
+
+def delete_station_with_code(conn, station):
+    sql = delete(stations).where(stations.c.station == station)
+    conn.execute(sql)
+    conn.commit()
+
+def update_station_name(conn, station_old_name, station_new_name):
+    sql = update(stations).where(stations.c.name == station_old_name).values(name=station_new_name)
+    conn.execute(sql)
+    conn.commit()
+    
+def select_measurements_with_tobs_above_85(conn):
+    print("Measurements with tobs above 85:")
+    sql = select(measurements.c.station, measurements.c.tobs).where(measurements.c.tobs > 85)
+    result = conn.execute(sql)
+    for row in result:
+        print(row.station, row.tobs)
+
 if __name__ == '__main__':
     meta.create_all(engine)
     inspector = inspect(engine)
@@ -64,4 +88,8 @@ if __name__ == '__main__':
         sql = "SELECT * FROM stations LIMIT 5"
         for row in execute_sql(conn, sql):
             print(row)
+        print_two_columns_from_stations(conn)
+        delete_station_with_code(conn, "USC00519397")
+        update_station_name(conn, "PEARL CITY", "NEW NAME")
+        select_measurements_with_tobs_above_85(conn)
         conn.close()
